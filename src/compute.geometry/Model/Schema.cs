@@ -3,13 +3,14 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using BH.oM.RemoteCompute;
 using Newtonsoft.Json;
 
 namespace Resthopper.IO
 {
-    public class Schema
+    public class RestHopperInput
     {
-        public Schema() { }
+        public RestHopperInput() { }
 
         [JsonProperty(PropertyName = "absolutetolerance")]
         public double AbsoluteTolerance { get; set; } = 0;
@@ -24,13 +25,7 @@ namespace Resthopper.IO
         ///  Can be used to store a Base-64 encoded GH script. Heaby; prefer Pointer instead.
         /// </summary>
         [JsonProperty(PropertyName = "algo")]
-        public string Algo { get; set; }
-
-        /// <summary>
-        ///  Can be used to store an URL of a GH script hosted elsewhere. The script will be downloaded, cached and then executed by RestHopper upon request.
-        /// </summary>
-        [JsonProperty(PropertyName = "pointer")]
-        public string Pointer { get; set; }
+        public string Script { get; set; }
 
         // If true on input, the solve results are cached based on this schema.
         // When true the cache is searched for already computed results and used
@@ -42,7 +37,7 @@ namespace Resthopper.IO
         public int RecursionLevel { get; set; } = 0;
 
         [JsonProperty(PropertyName = "values")]
-        public List<DataTree<ResthopperObject>> Values { get; set; } = new List<DataTree<ResthopperObject>>();
+        public List<GrasshopperDataTree<ResthopperObject>> Data { get; set; } = new List<GrasshopperDataTree<ResthopperObject>>();
 
         // Return warnings from GH
         [JsonProperty(PropertyName = "warnings")]

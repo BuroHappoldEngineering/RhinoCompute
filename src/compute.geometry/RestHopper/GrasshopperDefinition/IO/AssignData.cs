@@ -18,12 +18,13 @@ using Newtonsoft.Json;
 using System.Linq;
 using Serilog;
 using System.Reflection;
+using BH.oM.RemoteCompute;
 
 namespace compute.geometry
 {
     partial class GrasshopperDefinition
     {
-        public void AssignContextualData<T>(IGH_ContextualParameter contextualParameter, DataTree<ResthopperObject> tree)
+        public void AssignContextualData<T>(IGH_ContextualParameter contextualParameter, GrasshopperDataTree<ResthopperObject> tree)
         {
             foreach (KeyValuePair<string, List<ResthopperObject>> entry in tree)
             {
@@ -38,11 +39,11 @@ namespace compute.geometry
             }
         }
 
-        public void AssignVolatileData<RType, GHType>(IGH_Param gH_Param, DataTree<ResthopperObject> tree, Func<RType, GHType> create)
+        public void AssignVolatileData<RType, GHType>(IGH_Param gH_Param, GrasshopperDataTree<ResthopperObject> tree, Func<RType, GHType> create)
         {
             foreach (KeyValuePair<string, List<ResthopperObject>> entry in tree)
             {
-                GH_Path path = new GH_Path(GhPath.FromString(entry.Key));
+                GH_Path path = new GH_Path(GrasshopperPath.FromString(entry.Key));
                 for (int i = 0; i < entry.Value.Count; i++)
                 {
                     ResthopperObject restobj = entry.Value[i];
@@ -53,7 +54,7 @@ namespace compute.geometry
             }
         }
 
-        public bool AssignContextualData(IGH_Param ighParam, DataTree<ResthopperObject> tree)
+        public bool AssignContextualData(IGH_Param ighParam, GrasshopperDataTree<ResthopperObject> tree)
         {
             IGH_ContextualParameter contextualParameter = ighParam as IGH_ContextualParameter;
             if (ighParam == null)
@@ -125,11 +126,11 @@ namespace compute.geometry
             return true;
         }
 
-        public void AssignData(List<DataTree<ResthopperObject>> values)
+        public void AssignData(List<GrasshopperDataTree<ResthopperObject>> values)
         {
             InputGroup inputGroup = null;
 
-            foreach (DataTree<ResthopperObject> tree in values)
+            foreach (GrasshopperDataTree<ResthopperObject> tree in values)
             {
                 if (!_input.TryGetValue(tree.ParamName, out inputGroup))
                     continue;
@@ -188,7 +189,7 @@ namespace compute.geometry
                 {
                     foreach (KeyValuePair<string, List<ResthopperObject>> entry in tree)
                     {
-                        GH_Path path = new GH_Path(GhPath.FromString(entry.Key));
+                        GH_Path path = new GH_Path(GrasshopperPath.FromString(entry.Key));
                         for (int i = 0; i < entry.Value.Count; i++)
                         {
                             ResthopperObject restobj = entry.Value[i];

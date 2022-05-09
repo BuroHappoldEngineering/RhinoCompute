@@ -18,6 +18,7 @@ using Newtonsoft.Json;
 using System.Linq;
 using Serilog;
 using System.Reflection;
+using BH.oM.RemoteCompute;
 
 namespace compute.geometry
 {
@@ -25,7 +26,7 @@ namespace compute.geometry
     {
         class InputGroup
         {
-            DataTree<ResthopperObject> _tree;
+            GrasshopperDataTree<ResthopperObject> _tree;
             object _default = null;
             public IGH_Param Param { get; }
 
@@ -107,7 +108,7 @@ namespace compute.geometry
                 return null;
             }
 
-            public bool IsAlreadySet(DataTree<ResthopperObject> tree)
+            public bool IsAlreadySet(GrasshopperDataTree<ResthopperObject> tree)
             {
                 if (_tree == null)
                     return false;
@@ -131,7 +132,7 @@ namespace compute.geometry
                 return true;
             }
 
-            public void StoreTree(DataTree<ResthopperObject> tree)
+            public void StoreTree(GrasshopperDataTree<ResthopperObject> tree)
             {
                 _tree = tree;
             }

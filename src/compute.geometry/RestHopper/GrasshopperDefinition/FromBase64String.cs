@@ -29,7 +29,7 @@ namespace compute.geometry
             if (archive == null)
                 return null;
 
-            var rc = Construct(archive);
+            var rc = ConstructAndSetIO(archive);
             if (rc != null)
             {
                 rc.CacheKey = DataCache.CreateCacheKey(data);

@@ -18,15 +18,16 @@ using Newtonsoft.Json;
 using System.Linq;
 using Serilog;
 using System.Reflection;
+using BH.oM.RemoteCompute;
 
 namespace compute.geometry
 {
     partial class GrasshopperDefinition
     {
-        public Schema Solve()
+        public ResthopperOutput Solve()
         {
             HasErrors = false;
-            Schema result = new Schema();
+            ResthopperOutput result = new ResthopperOutput();
 
             // solve definition
             GH_Document.Enabled = true;
@@ -44,7 +45,7 @@ namespace compute.geometry
                     continue;
 
                 // Get data
-                var outputTree = new DataTree<ResthopperObject>();
+                var outputTree = new GrasshopperDataTree<ResthopperObject>();
                 outputTree.ParamName = kvp.Key;
 
                 var volatileData = param.VolatileData;
@@ -161,11 +162,11 @@ namespace compute.geometry
                     outputTree.Add(path.ToString(), resthopperObjectList);
                 }
 
-                result.Values.Add(outputTree);
+                result.Data.Add(outputTree);
             }
 
 
-            if (result.Values.Count < 1)
+            if (result.Data.Count < 1)
                 throw new System.Exceptions.PayAttentionException("Looks like you've missed something..."); // TODO
 
             return result;

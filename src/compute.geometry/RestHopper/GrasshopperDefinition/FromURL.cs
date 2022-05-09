@@ -39,7 +39,7 @@ namespace compute.geometry
 
             if (Guid.TryParse(url, out Guid componentId))
             {
-                rc = Construct(componentId);
+                rc = ConstructAndSetIO(componentId);
             }
             else
             {
@@ -47,7 +47,7 @@ namespace compute.geometry
                 if (archive == null)
                     return null;
 
-                rc = Construct(archive);
+                rc = ConstructAndSetIO(archive);
                 rc.CacheKey = url;
                 rc.IsLocalFileDefinition = !url.StartsWith("http", StringComparison.OrdinalIgnoreCase) && File.Exists(url);
             }

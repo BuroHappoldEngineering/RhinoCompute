@@ -15,6 +15,7 @@ using System.Net;
 using Nancy.Extensions;
 using System.Reflection;
 using System.Linq;
+using BH.oM.RemoteCompute;
 
 namespace compute.geometry
 {
@@ -93,12 +94,12 @@ namespace compute.geometry
 
         static object _ghsolvelock = new object();
 
-        static Response GrasshopperSolveHelper(Schema input, string body, System.Diagnostics.Stopwatch stopwatch)
+        static Response GrasshopperSolveHelper(RestHopperInput input, string body, System.Diagnostics.Stopwatch stopwatch)
         {
-            GrasshopperDefinition definition = GrasshopperDefinition.FromUrl(input.Pointer, true);
-            if (definition == null && !string.IsNullOrWhiteSpace(input.Algo))
+            GrasshopperDefinition definition = GrasshopperDefinition.FromUrl(input.Script, true);
+            if (definition == null && !string.IsNullOrWhiteSpace(input.Script))
             {
-                definition = GrasshopperDefinition.FromBase64String(input.Algo, true);
+                definition = GrasshopperDefinition.FromBase64String(input.Script, true);
             }
 
             if (definition == null)
@@ -110,12 +111,12 @@ namespace compute.geometry
             int recursionLevel = input.RecursionLevel + 1;
             definition.GH_Document.DefineConstant("ComputeRecursionLevel", new Grasshopper.Kernel.Expressions.GH_Variant(recursionLevel));
 
-            definition.AssignData(input.Values);
+            definition.AssignData(input.Data);
 
             long decodeTime = stopwatch.ElapsedMilliseconds;
             stopwatch.Restart();
             var output = definition.Solve();
-            output.Pointer = definition.CacheKey;
+            output.ScriptCacheKey = definition.CacheKey;
             long solveTime = stopwatch.ElapsedMilliseconds;
             stopwatch.Restart();
             string returnJson = JsonConvert.SerializeObject(output, GeometryResolver.Settings);
@@ -144,7 +145,7 @@ namespace compute.geometry
             string body = ctx.Request.Body.AsString();
             if (body.StartsWith("[") && body.EndsWith("]"))
                 body = body.Substring(1, body.Length - 2);
-            Schema input = JsonConvert.DeserializeObject<Schema>(body);
+            RestHopperInput input = JsonConvert.DeserializeObject<RestHopperInput>(body);
            
             if (input.CacheSolve)
             {
@@ -186,13 +187,13 @@ namespace compute.geometry
                 if (body.StartsWith("[") && body.EndsWith("]"))
                     body = body.Substring(1, body.Length - 2);
 
-                Schema input = JsonConvert.DeserializeObject<Schema>(body);
+                RestHopperInput input = JsonConvert.DeserializeObject<RestHopperInput>(body);
 
                 // load grasshopper file
-                definition = GrasshopperDefinition.FromUrl(input.Pointer, true);
+                definition = GrasshopperDefinition.FromUrl(input.Script, true);
                 if (definition == null)
                 {
-                    definition = GrasshopperDefinition.FromBase64String(input.Algo, true);
+                    definition = GrasshopperDefinition.FromBase64String(input.Script, true);
                 }
             }
             else
@@ -243,12 +244,12 @@ namespace compute.geometry
             rhObj.Data = JsonConvert.SerializeObject(v, GeometryResolver.Settings);
             return rhObj;
         }
-        public static void PopulateParam<DataType>(GH_Param<IGH_Goo> Param, Resthopper.IO.DataTree<ResthopperObject> tree)
+        public static void PopulateParam<DataType>(GH_Param<IGH_Goo> Param, GrasshopperDataTree<ResthopperObject> tree)
         {
 
             foreach (KeyValuePair<string, List<ResthopperObject>> entree in tree)
             {
-                GH_Path path = new GH_Path(GhPath.FromString(entree.Key));
+                GH_Path path = new GH_Path(GrasshopperPath.FromString(entree.Key));
                 List<DataType> objectList = new List<DataType>();
                 for (int i = 0; i < entree.Value.Count; i++)
                 {

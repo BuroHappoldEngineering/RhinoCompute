@@ -23,44 +23,7 @@ namespace compute.geometry
 {
     partial class GrasshopperDefinition
     {
-        private static GrasshopperDefinition Construct(Guid componentId)
-        {
-            GH_Component component = Grasshopper.Instances.ComponentServer.EmitObject(componentId) as GH_Component;
-            if (component == null)
-                return null;
-
-            GH_Document gh_document = new GH_Document();
-            gh_document.AddObject(component, false);
-
-            try
-            {
-                // raise DocumentServer.DocumentAdded event (used by some plug-ins)
-                Grasshopper.Instances.DocumentServer.AddDocument(gh_document);
-            }
-            catch (Exception e)
-            {
-                Log.Error(e, "Exception in DocumentAdded event handler");
-            }
-
-            GrasshopperDefinition rc = new GrasshopperDefinition(gh_document);
-            rc._singularComponent = component;
-
-            foreach (var input in component.Params.Input)
-            {
-                rc._input[input.NickName] = new InputGroup(input);
-            }
-
-            foreach (var output in component.Params.Output)
-            {
-                rc._output[output.NickName] = output;
-            }
-
-            return rc;
-        }
-
-        // --------------------------------------------------------------------- //
-
-        private static GrasshopperDefinition Construct(GH_Archive archive)
+        private static GrasshopperDefinition ConstructAndSetIO(GH_Archive archive)
         {
             string icon = null;
             var chunk = archive.GetRootNode.FindChunk("Definition");
@@ -94,6 +57,43 @@ namespace compute.geometry
             GrasshopperDefinition rc = new GrasshopperDefinition(ghDocument, icon);
 
             SetIOFromGHDocumentObjects(rc, ghDocument.Objects);
+
+            return rc;
+        }
+
+        // --------------------------------------------------------------------- //
+
+        private static GrasshopperDefinition ConstructAndSetIO(Guid componentId)
+        {
+            GH_Component component = Grasshopper.Instances.ComponentServer.EmitObject(componentId) as GH_Component;
+            if (component == null)
+                return null;
+
+            GH_Document gh_document = new GH_Document();
+            gh_document.AddObject(component, false);
+
+            try
+            {
+                // raise DocumentServer.DocumentAdded event (used by some plug-ins)
+                Grasshopper.Instances.DocumentServer.AddDocument(gh_document);
+            }
+            catch (Exception e)
+            {
+                Log.Error(e, "Exception in DocumentAdded event handler");
+            }
+
+            GrasshopperDefinition rc = new GrasshopperDefinition(gh_document);
+            rc._singularComponent = component;
+
+            foreach (var input in component.Params.Input)
+            {
+                rc._input[input.NickName] = new InputGroup(input);
+            }
+
+            foreach (var output in component.Params.Output)
+            {
+                rc._output[output.NickName] = output;
+            }
 
             return rc;
         }
