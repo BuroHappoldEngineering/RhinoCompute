@@ -2,21 +2,34 @@
 using System.IO;
 using System.Net;
 using System.Collections.Generic;
-using BH.Engine.RhinoCompute;
+using BH.Engine.RemoteCompute.RhinoCompute;
+
+using Rhino.Geometry;
+
 using Grasshopper.Kernel;
-using BH.oM.RemoteCompute;
+using Grasshopper.Kernel.Data;
+using Grasshopper.Kernel.Parameters;
+using Grasshopper.Kernel.Special;
+using Grasshopper.Kernel.Types;
+using GH_IO.Serialization;
+
+using Resthopper.IO;
+using Newtonsoft.Json;
+using System.Linq;
+using Serilog;
+using System.Reflection;
 
 namespace compute.geometry
 {
     partial class GrasshopperDefinition
     {
-        private void LogRuntimeMessages(IEnumerable<IGH_ActiveObject> objects, ResthopperOutput schema)
+        private void LogRuntimeMessages(IEnumerable<IGH_ActiveObject> objects, FullRhinoComputeSchema schema)
         {
             foreach (var obj in objects)
                 LogRuntimeMessages(obj, schema);
         }
 
-        private void LogRuntimeMessages(IGH_ActiveObject obj, ResthopperOutput schema)
+        private void LogRuntimeMessages(IGH_ActiveObject obj, FullRhinoComputeSchema schema)
         {
             foreach (var msg in obj.RuntimeMessages(GH_RuntimeMessageLevel.Error))
             {

@@ -7,7 +7,7 @@ using BH.oM.RemoteCompute.RhinoCompute;
 using Grasshopper.Kernel;
 using log = BH.Engine.RemoteCompute.Log;
 
-namespace BH.Engine.RhinoCompute
+namespace BH.Engine.RemoteCompute.RhinoCompute
 {
     public static partial class Query
     {

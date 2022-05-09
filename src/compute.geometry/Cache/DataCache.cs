@@ -9,7 +9,7 @@ namespace compute.geometry
     static partial class DataCache
     {
         static string _definitionCacheDirectory;
-        static string CacheDirectory
+        static string DefinitionCacheDirectory
         {
             get
             {
@@ -40,74 +40,58 @@ namespace compute.geometry
             }
         }
 
-        public static bool TryGetCachedDefinition(string key, out GrasshopperDefinition rc)
+        public static GrasshopperDefinition GetCachedDefinition(string key)
         {
-            rc = null;
-
             if (string.IsNullOrWhiteSpace(key))
-                return false;
-
-            // Check in-memory cache
+                return null;
             var def = System.Runtime.Caching.MemoryCache.Default.Get(key) as CachedDefinition;
-
-            if (def != null)
+            if (def == null)
             {
-                rc = def.Definition;
-
-                if (def.Definition.IsLocalFileDefinition)
+                string filename = DefinitionCacheFileName(key);
+                if (filename != null && System.IO.File.Exists(filename))
                 {
-                    if (def.WatchedFileRuntimeSerialNumber != GrasshopperDefinition.WatchedFileRuntimeSerialNumber)
+                    try
                     {
-                        System.Runtime.Caching.MemoryCache.Default.Remove(key);
+                        string data = System.IO.File.ReadAllText(filename);
+                        return GrasshopperDefinition.FromBase64String(data, true);
+                    }
+                    catch (Exception ex)
+                    {
+                        Serilog.Log.Error($"Unable to read cache file: {filename}");
+                        Serilog.Log.Error(ex, "File error exception");
                     }
                 }
-
-                return true;
+                return null;
             }
-
-            // Check file cache
-            string filename = CacheFileName(key);
-
-            if (filename != null && System.IO.File.Exists(filename))
+            if (def.Definition.IsLocalFileDefinition)
             {
-                try
+                if (def.WatchedFileRuntimeSerialNumber != GrasshopperDefinition.WatchedFileRuntimeSerialNumber)
                 {
-                    string data = System.IO.File.ReadAllText(filename);
-                    rc = GrasshopperDefinition.FromBase64String(data, true);
-                    return true;
-                }
-                catch (Exception ex)
-                {
-                    Serilog.Log.Error($"Unable to read cache file: {filename}");
-                    Serilog.Log.Error(ex, "File error exception");
+                    System.Runtime.Caching.MemoryCache.Default.Remove(key);
+                    return null;
                 }
             }
-
-            return false;
+            return def.Definition;
         }
 
-        public static bool CacheInMemory(string key, GrasshopperDefinition definition)
+        public static void SetCachedDefinition(string key, GrasshopperDefinition definition, string data)
         {
-            try
+            CachedDefinition cachedef = new CachedDefinition
             {
-                System.Runtime.Caching.MemoryCache.Default.Set(key, definition, CachePolicy);
-                return true;
-            }
-            catch { }
-            return false;
-        }
+                Definition = definition,
+                WatchedFileRuntimeSerialNumber = GrasshopperDefinition.WatchedFileRuntimeSerialNumber
+            };
+            System.Runtime.Caching.MemoryCache.Default.Set(key, cachedef, CachePolicy);
 
-        public static void CacheToDisk(string key, string data)
-        {
             if (!string.IsNullOrWhiteSpace(data))
             {
-                string filename = CacheFileName(key);
+                string filename = DefinitionCacheFileName(key);
                 if (filename != null && !System.IO.File.Exists(filename))
                 {
                     try
                     {
-                        if (!System.IO.Directory.Exists(CacheDirectory))
-                            System.IO.Directory.CreateDirectory(CacheDirectory);
+                        if (!System.IO.Directory.Exists(DefinitionCacheDirectory))
+                            System.IO.Directory.CreateDirectory(DefinitionCacheDirectory);
 
                         System.IO.File.WriteAllText(filename, data);
                         System.Threading.Tasks.Task.Run(() => DataCache.CGCacheDirectory());
@@ -165,18 +149,14 @@ namespace compute.geometry
                 jsonString.IndexOf("http", StringComparison.OrdinalIgnoreCase) > 0)
             {
                 Dictionary<string, string> cacheDictionary = new Dictionary<string, string>();
-
                 cacheDictionary = token.ToObject(cacheDictionary.GetType()) as Dictionary<string, string>;
-
                 string url;
-
                 if (cacheDictionary == null || !cacheDictionary.TryGetValue("url", out url))
                     return null;
 
                 JToken jtoken = null;
                 string key = $"url:{url.ToLower()}";
                 Tuple<JToken, object> cacheEntry = System.Runtime.Caching.MemoryCache.Default.Get(key) as Tuple<JToken, object>;
-
                 if (cacheEntry != null)
                 {
                     Rhino.Geometry.GeometryBase geometry = cacheEntry.Item2 as Rhino.Geometry.GeometryBase;
@@ -184,7 +164,6 @@ namespace compute.geometry
                         return geometry.DuplicateShallow();
                     jtoken = cacheEntry.Item1;
                 }
-
                 if (jtoken == null)
                 {
                     using (var client = new System.Net.WebClient())
@@ -205,9 +184,7 @@ namespace compute.geometry
                         rc = jtoken.ToObject(objectType, serializer);
 
                     cacheEntry = new Tuple<JToken, object>(jtoken, rc);
-
                     System.Runtime.Caching.MemoryCache.Default.Add(key, cacheEntry, CachePolicy);
-
                     Rhino.Geometry.GeometryBase geometry = rc as Rhino.Geometry.GeometryBase;
                     if (geometry != null)
                         return geometry.DuplicateShallow();
@@ -217,8 +194,27 @@ namespace compute.geometry
             return null;
         }
 
-        //  we could do things like evict after 2 weeks with policy.SlidingExpiration = new TimeSpan(14, 0, 0, 0);
-        private static System.Runtime.Caching.CacheItemPolicy CachePolicy { get; } = new System.Runtime.Caching.CacheItemPolicy();
+        private static System.Runtime.Caching.CacheItemPolicy CachePolicy
+        {
+            get
+            {
+                var policy = new System.Runtime.Caching.CacheItemPolicy();
+                // no policy yet, but we could do things like evict after 2 weeks with
+                //policy.SlidingExpiration = new TimeSpan(14, 0, 0, 0);
+                return policy;
+            }
+        }
+
+        static bool IsCacheKey(this string text)
+        {
+            if (string.IsNullOrWhiteSpace(text))
+                return false;
+            if (!text.StartsWith("md5_", StringComparison.Ordinal))
+                return false;
+            if (text.Length > 100)
+                return false;
+            return true;
+        }
 
         static int CompareFilesByDate(string a, string b)
         {
@@ -231,9 +227,9 @@ namespace compute.geometry
         {
             try
             {
-                if (System.IO.Directory.Exists(CacheDirectory))
+                if (System.IO.Directory.Exists(DefinitionCacheDirectory))
                 {
-                    var files = System.IO.Directory.GetFiles(CacheDirectory);
+                    var files = System.IO.Directory.GetFiles(DefinitionCacheDirectory);
                     const int ALLOWED_COUNT = 20;
                     if (files != null && files.Length > ALLOWED_COUNT)
                     {
@@ -251,9 +247,14 @@ namespace compute.geometry
             }
         }
 
-        static string CacheFileName(string key)
+        static string DefinitionCacheFileName(string key)
         {
-            return System.IO.Path.Combine(CacheDirectory, key + ".cache");
+            if (key.IsCacheKey())
+            {
+                string filename = System.IO.Path.Combine(DefinitionCacheDirectory, key + ".cache");
+                return filename;
+            }
+            return null;
         }
     }
 }

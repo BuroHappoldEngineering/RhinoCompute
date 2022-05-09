@@ -2,7 +2,7 @@
 using System.IO;
 using System.Net;
 using System.Collections.Generic;
-using BH.Engine.RhinoCompute;
+using BH.Engine.RemoteCompute.RhinoCompute;
 using Rhino.Geometry;
 using Grasshopper.Kernel;
 using Grasshopper.Kernel.Data;

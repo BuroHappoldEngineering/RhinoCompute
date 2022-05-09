@@ -68,9 +68,9 @@ namespace compute.geometry
             if (body.StartsWith("[") && body.EndsWith("]"))
                 body = body.Substring(1, body.Length - 2);
 
-            ResthopperInput input = JsonConvert.DeserializeObject<ResthopperInput>(body);
+            FullRhinoComputeSchema input = JsonConvert.DeserializeObject<FullRhinoComputeSchema>(body);
 
-            if (input.StoreOutputsInCache)
+            if (input.CacheSolve)
             {
                 // look in the cache to see if this has already been solved
                 string cachedReturnJson = DataCache.GetCachedSolveResults(body);
@@ -98,60 +98,54 @@ namespace compute.geometry
                 return GrasshopperSolveHelper(input, body); // we can't block on recursive calls
         }
 
-        static Response GrasshopperSolveHelper(ResthopperInput resthopperInput, string body)
+        static Response GrasshopperSolveHelper(FullRhinoComputeSchema receivedSchema, string body)
         {
-            GrasshopperDefinition definition = null;
-
-            if (string.IsNullOrWhiteSpace(resthopperInput.Script))
-                throw new Exception("Missing script input.");
-
-            Uri scriptUrl = null;
-            if (Uri.TryCreate(resthopperInput.Script, UriKind.Absolute, out scriptUrl))
-                definition = GrasshopperDefinition.FromUrl(scriptUrl, true);
-
-            if (definition == null)
+            GrasshopperDefinition definition = GrasshopperDefinition.FromUrl(receivedSchema.Pointer, true);
+            if (definition == null && !string.IsNullOrWhiteSpace(receivedSchema.Algo))
             {
-                definition = GrasshopperDefinition.FromBase64String(resthopperInput.Script, true);
-
-                if (definition == null)
-                    throw new Exception("Unable to convert Base-64 encoded Grasshopper script to a GrasshopperDefinition object.");
+                definition = GrasshopperDefinition.FromBase64String(receivedSchema.Algo, true);
             }
 
-            int recursionLevel = resthopperInput.RecursionLevel + 1;
+            if (definition == null)
+                throw new Exception("Unable to convert Base-64 encoded Grasshopper script to a GrasshopperDefinition object.");
+
+            int recursionLevel = receivedSchema.RecursionLevel + 1;
             definition.GH_Document.DefineConstant("ComputeRecursionLevel", new Grasshopper.Kernel.Expressions.GH_Variant(recursionLevel));
 
-            definition.AssignInputData(resthopperInput.Data);
+            definition.AssignInputData(receivedSchema.Values);
 
             long decodeTime = _stopwatch.ElapsedMilliseconds;
             _stopwatch.Restart();
 
             // Solve definition.
-            ResthopperOutput outputSchema = definition.SolveDefinition();
+            var output = definition.SolveDefinition();
             long solveTime = _stopwatch.ElapsedMilliseconds;
             _stopwatch.Restart();
 
-            outputSchema.ScriptCacheKey = definition.CacheKey;
+            output.Pointer = definition.CacheKey;
 
             // Serialize result.
-            string outputSchema_json = JsonConvert.SerializeObject(outputSchema, GeometryResolver.JsonSerializerSettings);
+            string returnJson = JsonConvert.SerializeObject(output, GeometryResolver.JsonSerializerSettings);
             long encodeTime = _stopwatch.ElapsedMilliseconds;
 
             // Set up response.
-            Response outputSchema_nancy = outputSchema_json;
-            outputSchema_nancy.ContentType = "application/json";
-            outputSchema_nancy = outputSchema_nancy.WithHeader("Server-Timing", $"decode;dur={decodeTime}, solve;dur={solveTime}, encode;dur={encodeTime}");
+            Response nancyResponse = returnJson;
+            nancyResponse.ContentType = "application/json";
+            nancyResponse = nancyResponse.WithHeader("Server-Timing", $"decode;dur={decodeTime}, solve;dur={solveTime}, encode;dur={encodeTime}");
 
             if (definition.HasErrors)
             {
-                outputSchema_nancy.StatusCode = Nancy.HttpStatusCode.InternalServerError;
-                outputSchema_nancy.ReasonPhrase = "Errors:\n\t" + string.Join("\n\t", definition.ErrorMessages);
+                nancyResponse.StatusCode = Nancy.HttpStatusCode.InternalServerError;
+                nancyResponse.ReasonPhrase = "Errors:\n\t" + string.Join("\n\t", definition.ErrorMessages);
             }
             else
-                if (resthopperInput.StoreOutputsInCache)
-                DataCache.SetCachedSolveResults(body, outputSchema_json, definition);
+                if (receivedSchema.CacheSolve)
+                DataCache.SetCachedSolveResults(body, returnJson, definition);
 
-            return outputSchema_nancy;
+            return nancyResponse;
         }
+
+
 
         // strip bom from string -- [239, 187, 191] in byte array == (char)65279
         // https://stackoverflow.com/a/54894929/1902446

@@ -17,8 +17,7 @@ using System.Reflection;
 using System.Linq;
 using BH.oM.RemoteCompute.RhinoCompute;
 using static compute.geometry.GrasshopperDefinition;
-using BH.Engine.RhinoCompute;
-using BH.oM.RemoteCompute;
+using BH.Engine.RemoteCompute.RhinoCompute;
 
 namespace compute.geometry
 {
@@ -33,17 +32,19 @@ namespace compute.geometry
                 if (body.StartsWith("[") && body.EndsWith("]"))
                     body = body.Substring(1, body.Length - 2);
 
-                ResthopperInput input = JsonConvert.DeserializeObject<ResthopperInput>(body);
+                FullRhinoComputeSchema input = JsonConvert.DeserializeObject<FullRhinoComputeSchema>(body);
 
                 // load grasshopper file
-                definition = GrasshopperDefinition.FromUrl(new Uri(input.Script), true);
+                definition = GrasshopperDefinition.FromUrl(input.Pointer, true);
                 if (definition == null)
-                    definition = GrasshopperDefinition.FromBase64String(input.Script, true);
+                {
+                    definition = GrasshopperDefinition.FromBase64String(input.Algo, true);
+                }
             }
             else
             {
-                string url = Request.Query[nameof(ResthopperInput.Script)].ToString();
-                definition = GrasshopperDefinition.FromUrl(new Uri(url), true);
+                string url = Request.Query["Pointer"].ToString();
+                definition = GrasshopperDefinition.FromUrl(url, true);
             }
 
             if (definition == null)

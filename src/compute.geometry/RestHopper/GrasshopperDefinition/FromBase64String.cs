@@ -2,7 +2,7 @@
 using System.IO;
 using System.Net;
 using System.Collections.Generic;
-using BH.Engine.RhinoCompute;
+using BH.Engine.RemoteCompute.RhinoCompute;
 
 using Rhino.Geometry;
 
@@ -23,25 +23,22 @@ namespace compute.geometry
 {
     partial class GrasshopperDefinition
     {
-        public static GrasshopperDefinition FromBase64String(string base64string, bool cacheToDisk)
+        public static GrasshopperDefinition FromBase64String(string data, bool cache)
         {
-            var archive = base64string.ArchiveFromBase64String();
+            var archive = ArchiveFromBase64String(data);
             if (archive == null)
                 return null;
 
-            var rc = ConstructAndSetIo(archive);
-
+            var rc = Construct(archive);
             if (rc != null)
             {
-                rc.CacheKey = DataCache.CreateCacheKey(base64string);
-
-                if (cacheToDisk)
+                rc.CacheKey = DataCache.CreateCacheKey(data);
+                if (cache)
                 {
-                    DataCache.CacheToDisk(rc.CacheKey, base64string);
-                    rc.StoredInCache = true;
+                    DataCache.SetCachedDefinition(rc.CacheKey, rc, data);
+                    rc.FoundInDataCache = true;
                 }
             }
-
             return rc;
         }
     }

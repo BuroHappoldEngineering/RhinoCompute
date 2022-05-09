@@ -2,7 +2,7 @@
 using System.IO;
 using System.Net;
 using System.Collections.Generic;
-using BH.Engine.RhinoCompute;
+using BH.Engine.RemoteCompute.RhinoCompute;
 
 using Rhino.Geometry;
 
@@ -23,11 +23,9 @@ namespace compute.geometry
 {
     partial class GrasshopperDefinition
     {
-        public static GH_Archive ArchiveFromUrl(Uri uri)
+        public static GH_Archive ArchiveFromUrl(string url)
         {
-            string url = uri.ToString();
-
-            if (url == null)
+            if (string.IsNullOrWhiteSpace(url))
                 return null;
 
             if (File.Exists(url))
