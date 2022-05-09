@@ -23,9 +23,9 @@ namespace compute.geometry
 {
     partial class GrasshopperDefinition
     {
-        private static void AddInput(GrasshopperDefinition rc, IGH_Param param, string inputName)
+        private static void AddInput(GrasshopperDefinition rc, IGH_Param param, string name)
         {
-            if (rc.Inputs.ContainsKey(inputName))
+            if (rc._input.ContainsKey(name))
             {
                 string msg = "Multiple input parameters with the same name were detected. Parameter names must be unique.";
                 rc.HasErrors = true;
@@ -33,7 +33,7 @@ namespace compute.geometry
                 LogError(msg);
             }
             else
-                rc.Inputs[inputName] = new InputGroup(param);
+                rc._input[name] = new InputGroup(param);
         }
     }
 }

@@ -24,7 +24,7 @@ namespace compute.geometry
     {
         private static void AddOutput(GrasshopperDefinition rc, IGH_Param param, string name)
         {
-            if (rc.Outputs.ContainsKey(name))
+            if (rc._output.ContainsKey(name))
             {
                 string msg = "Multiple output parameters with the same name were detected. Parameter names must be unique.";
                 rc.HasErrors = true;
@@ -32,7 +32,7 @@ namespace compute.geometry
                 LogError(msg);
             }
             else
-                rc.Outputs[name] = param;
+                rc._output[name] = param;
         }
     }
 }

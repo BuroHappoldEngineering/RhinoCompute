@@ -16,8 +16,6 @@ namespace compute.geometry
     class GeometryEndPoint
     {
         static List<GeometryEndPoint> _allEndPoints;
-        static JsonSerializerSettings m_jsonSerialiserSettings = new JsonSerializerSettings { TypeNameHandling = TypeNameHandling.Auto };
-
         public static IEnumerable<GeometryEndPoint> AllEndPoints
         {
             get
@@ -364,7 +362,7 @@ namespace compute.geometry
             if (StopAt.BodyToString == stopat)
                 return $"{(DateTime.Now - start).TotalSeconds}";
 
-            object data = string.IsNullOrWhiteSpace(jsonString) ? null : JsonConvert.DeserializeObject(jsonString, m_jsonSerialiserSettings);
+            object data = string.IsNullOrWhiteSpace(jsonString) ? null : JsonConvert.DeserializeObject(jsonString);
             var ja = data as Newtonsoft.Json.Linq.JArray;
             string resultString = null;
             if (multiple && ja.Count > 1)
@@ -585,8 +583,8 @@ namespace compute.geometry
                         }
 
                         if (rc.Length == 1)
-                            return Newtonsoft.Json.JsonConvert.SerializeObject(rc[0], GeometryResolver.JsonSerializerSettings);
-                        return Newtonsoft.Json.JsonConvert.SerializeObject(rc, GeometryResolver.JsonSerializerSettings);
+                            return Newtonsoft.Json.JsonConvert.SerializeObject(rc[0], GeometryResolver.Settings);
+                        return Newtonsoft.Json.JsonConvert.SerializeObject(rc, GeometryResolver.Settings);
                     }
                 }
             }
@@ -635,7 +633,7 @@ namespace compute.geometry
                         }
                         var rc = constructor.Invoke(parameters);
                         rc = ProcessModifiers(rc, returnModifiers);
-                        return Newtonsoft.Json.JsonConvert.SerializeObject(rc, GeometryResolver.JsonSerializerSettings);
+                        return Newtonsoft.Json.JsonConvert.SerializeObject(rc, GeometryResolver.Settings);
                     }
                 }
             }
@@ -739,7 +737,7 @@ namespace compute.geometry
     public class GeometryResolver : DefaultContractResolver
     {
         static JsonSerializerSettings _settings;
-        public static JsonSerializerSettings JsonSerializerSettings
+        public static JsonSerializerSettings Settings
         {
             get
             {

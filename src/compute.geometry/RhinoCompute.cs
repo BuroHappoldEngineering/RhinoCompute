@@ -16,7 +16,6 @@ namespace Rhino.Compute
         public static string AuthToken { get; set; }
         public static string ApiKey { get; set; }
         public static string Version => "0.12.0";
-        static JsonSerializerSettings m_jsonSerialiserSettings = new JsonSerializerSettings { TypeNameHandling = TypeNameHandling.Auto };
 
         public static T Post<T>(string function, params object[] postData)
         {
@@ -62,7 +61,7 @@ namespace Rhino.Compute
             using (var streamReader = new StreamReader(response.GetResponseStream()))
             {
                 var jsonString = streamReader.ReadToEnd();
-                object data = Newtonsoft.Json.JsonConvert.DeserializeObject(jsonString, m_jsonSerialiserSettings);
+                object data = Newtonsoft.Json.JsonConvert.DeserializeObject(jsonString);
                 var ja = data as Newtonsoft.Json.Linq.JArray;
                 out1 = ja[1].ToObject<T1>();
                 return ja[0].ToObject<T0>();
@@ -79,7 +78,7 @@ namespace Rhino.Compute
             using (var streamReader = new StreamReader(response.GetResponseStream()))
             {
                 var jsonString = streamReader.ReadToEnd();
-                object data = Newtonsoft.Json.JsonConvert.DeserializeObject(jsonString, m_jsonSerialiserSettings);
+                object data = Newtonsoft.Json.JsonConvert.DeserializeObject(jsonString);
                 var ja = data as Newtonsoft.Json.Linq.JArray;
                 out1 = ja[1].ToObject<T1>();
                 out2 = ja[2].ToObject<T2>();
